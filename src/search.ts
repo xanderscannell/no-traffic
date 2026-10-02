@@ -56,8 +56,12 @@ export function parseLatLng(text: string): Coord | null {
   return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? [lng, lat] : null;
 }
 
-/** "Name" plus the town from its detail: "Detroit Metropolitan Airport, Detroit". */
-export const shortLabel = (s: Suggestion) => (s.detail ? `${s.name}, ${s.detail.split(', ')[0]}` : s.name);
+/** Name plus town. Details look like "[street, ]town, State ZIP", so the town is second to last. */
+export function shortLabel(s: Suggestion): string {
+  const parts = s.detail.split(', ').filter(Boolean);
+  const town = parts.length > 1 ? parts[parts.length - 2] : parts[0];
+  return town ? `${s.name}, ${town}` : s.name;
+}
 
 /** UUID for session tokens; `crypto.randomUUID` only exists on secure pages. */
 export function newSession(): string {

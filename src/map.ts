@@ -31,7 +31,8 @@ export function createMap(el: HTMLElement, token: string | null, onSelect: (i: n
     dark.addEventListener('change', setTiles);
   }
 
-  const legend = new L.Control({ position: 'bottomleft' });
+  // Top right: at phone width a bottom legend collides with the attribution.
+  const legend = new L.Control({ position: 'topright' });
   legend.onAdd = () => {
     const div = L.DomUtil.create('div', 'legend');
     div.innerHTML = (['low', 'moderate', 'heavy', 'severe'] as const)
@@ -83,7 +84,7 @@ export function createMap(el: HTMLElement, token: string | null, onSelect: (i: n
         L.circleMarker(ll(p), { radius: 7, color: css('--surface'), weight: 3, fillColor: css(cls), fillOpacity: 1 }).addTo(layer);
       }
       map.invalidateSize();
-      if (fit) map.fitBounds(L.latLngBounds(routes.flatMap((r) => r.coords.map(ll))), { paddingTopLeft: [32, 32], paddingBottomRight: [32, 64], animate: false } /* bottom clears the legend; an animated zoom-out left routes clipped to the old view */);
+      if (fit) map.fitBounds(L.latLngBounds(routes.flatMap((r) => r.coords.map(ll))), { paddingTopLeft: [32, 56], paddingBottomRight: [32, 32], animate: false } /* top clears the legend; an animated zoom-out left routes clipped to the old view */);
     },
   };
 }

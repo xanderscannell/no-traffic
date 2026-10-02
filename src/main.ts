@@ -225,7 +225,8 @@ async function retrieve(s: Suggestion, f: Field, fetchJson: FetchJson): Promise<
 
 for (const f of Object.values(fields)) {
   combobox(f.input, {
-    suggest: (q) => suggest(q, f, demo ? demoFetch(demo) : plainFetch),
+    // Typed coordinates are used as-is, so there is nothing to look up.
+    suggest: (q) => (parseLatLng(q) ? Promise.resolve([]) : suggest(q, f, demo ? demoFetch(demo) : plainFetch)),
     pick: (s) => {
       const place = retrieve(s, f, demo ? demoFetch(demo) : plainFetch);
       place.catch(() => {}); // reported when a search awaits it

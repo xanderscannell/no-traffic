@@ -11,6 +11,9 @@ test('"detroit airp" suggests the airport first, with readable details', () => {
   // A street address loses the repeated name and the country.
   expect(s[1].detail).toBe('7680 Merriman Rd, Romulus, Michigan 48174');
   expect(shortLabel(s[0])).toBe('Detroit Metropolitan Airport, Detroit');
+  // A place with a street address still shows its town, not the street.
+  expect(shortLabel({ id: 'x', name: 'Campus Martius', detail: '800 Woodward Avenue, Detroit, Michigan 48226' })).toBe('Campus Martius, Detroit');
+  expect(shortLabel({ id: 'x', name: 'Michigan', detail: 'United States' })).toBe('Michigan, United States');
 });
 
 test('an address suggestion drops its repeated name', () => {
