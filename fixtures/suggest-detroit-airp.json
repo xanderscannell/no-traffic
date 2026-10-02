@@ -1,0 +1,287 @@
+{
+ "recorded": "2026-10-02T17:38:19.489Z",
+ "status": 200,
+ "body": {
+  "suggestions": [
+   {
+    "name": "Detroit Metropolitan Airport",
+    "name_preferred": "Detroit Metropolitan Airport",
+    "mapbox_id": "dXJuOm1ieHBvaTphNzhkODg4YS1iNjg1LTRjMGMtODkyNy01ZTU0ZWE2YjkyNTg",
+    "feature_type": "poi",
+    "address": "Detroit",
+    "full_address": "Detroit, Michigan 48242, United States",
+    "place_formatted": "Michigan 48242, United States",
+    "context": {
+     "country": {
+      "name": "United States",
+      "country_code": "US",
+      "country_code_alpha_3": "USA"
+     },
+     "region": {
+      "name": "Michigan",
+      "region_code": "MI",
+      "region_code_full": "US-MI"
+     },
+     "postcode": {
+      "id": "dXJuOm1ieHBsYzpDY1ZPN0E",
+      "name": "48242"
+     },
+     "place": {
+      "id": "dXJuOm1ieHBsYzpCUmlJN0E",
+      "name": "Detroit"
+     }
+    },
+    "language": "en",
+    "maki": "airport",
+    "poi_category": [
+     "airport"
+    ],
+    "poi_category_ids": [
+     "airport"
+    ],
+    "external_ids": {
+     "golden": "airport-DTW",
+     "iata": "DTW"
+    },
+    "metadata": {},
+    "distance": 28994
+   },
+   {
+    "name": "Holiday Inn Express Romulus Detroit Airport",
+    "mapbox_id": "dXJuOm1ieHBvaTpiMWU1N2IxNi04Mzc3LTQxZjctOGVlNS0yYTBkYTFkMGYyZGI",
+    "feature_type": "poi",
+    "address": "7680 Merriman Rd",
+    "full_address": "7680 Merriman Rd, Romulus, Michigan 48174, United States",
+    "place_formatted": "Romulus, Michigan 48174, United States",
+    "context": {
+     "country": {
+      "name": "United States",
+      "country_code": "US",
+      "country_code_alpha_3": "USA"
+     },
+     "region": {
+      "name": "Michigan",
+      "region_code": "MI",
+      "region_code_full": "US-MI"
+     },
+     "postcode": {
+      "id": "dXJuOm1ieHBsYzpDYjJPN0E",
+      "name": "48174"
+     },
+     "place": {
+      "id": "dXJuOm1ieHBsYzpFT0FvN0E",
+      "name": "Romulus"
+     },
+     "address": {
+      "name": "7680 Merriman Rd",
+      "address_number": "7680",
+      "street_name": "Merriman Rd"
+     },
+     "street": {
+      "name": "Merriman Rd"
+     }
+    },
+    "language": "en",
+    "maki": "lodging",
+    "poi_category": [
+     "hotel",
+     "lodging"
+    ],
+    "poi_category_ids": [
+     "hotel",
+     "lodging"
+    ],
+    "brand": [
+     "Holiday Inn"
+    ],
+    "brand_id": [
+     "holiday_inn",
+     "intercontinental_hotels_group"
+    ],
+    "external_ids": {
+     "dataplor": "4fda860d-485f-45a4-b695-fa7ee63f13f1"
+    },
+    "metadata": {},
+    "distance": 26545
+   },
+   {
+    "name": "Baymont by Wyndham Detroit Airport Romulus",
+    "name_preferred": "Baymont by Wyndham Detroit Airport Romulus",
+    "mapbox_id": "dXJuOm1ieHBvaToyZTJmMmMzYi1lMDA3LTRlZTgtYTc0OC1iZGIwZjZjNTNmN2Y",
+    "feature_type": "poi",
+    "address": "9000 Wickham Rd",
+    "full_address": "9000 Wickham Rd, Romulus, Michigan 48174, United States",
+    "place_formatted": "Romulus, Michigan 48174, United States",
+    "context": {
+     "country": {
+      "name": "United States",
+      "country_code": "US",
+      "country_code_alpha_3": "USA"
+     },
+     "region": {
+      "name": "Michigan",
+      "region_code": "MI",
+      "region_code_full": "US-MI"
+     },
+     "postcode": {
+      "id": "dXJuOm1ieHBsYzpDYjJPN0E",
+      "name": "48174"
+     },
+     "place": {
+      "id": "dXJuOm1ieHBsYzpFT0FvN0E",
+      "name": "Romulus"
+     },
+     "address": {
+      "name": "9000 Wickham Rd",
+      "address_number": "9000",
+      "street_name": "Wickham Rd"
+     },
+     "street": {
+      "name": "Wickham Rd"
+     }
+    },
+    "language": "en",
+    "maki": "lodging",
+    "poi_category": [
+     "hotel",
+     "lodging"
+    ],
+    "poi_category_ids": [
+     "hotel",
+     "lodging"
+    ],
+    "brand": [
+     "Wyndham",
+     "Wyndham Hotels and Resorts"
+    ],
+    "brand_id": [
+     "wyndham"
+    ],
+    "external_ids": {
+     "dataplor": "3f6dc267-dce2-442b-9b8f-ec3bd47233d8"
+    },
+    "metadata": {},
+    "distance": 26819
+   },
+   {
+    "name": "Hampton Inn and Suites Detroit Airport Romulus",
+    "name_preferred": "Hampton Inn and Suites Detroit Airport Romulus",
+    "mapbox_id": "dXJuOm1ieHBvaTpmOTRhY2VmZS00NmM5LTQ0M2MtYjk3NC1kNmYwN2Y3YTljMWI",
+    "feature_type": "poi",
+    "address": "31700 Smith Rd",
+    "full_address": "31700 Smith Rd, Romulus, Michigan 48174, United States",
+    "place_formatted": "Romulus, Michigan 48174, United States",
+    "context": {
+     "country": {
+      "name": "United States",
+      "country_code": "US",
+      "country_code_alpha_3": "USA"
+     },
+     "region": {
+      "name": "Michigan",
+      "region_code": "MI",
+      "region_code_full": "US-MI"
+     },
+     "postcode": {
+      "id": "dXJuOm1ieHBsYzpDYjJPN0E",
+      "name": "48174"
+     },
+     "place": {
+      "id": "dXJuOm1ieHBsYzpFT0FvN0E",
+      "name": "Romulus"
+     },
+     "address": {
+      "name": "31700 Smith Rd",
+      "address_number": "31700",
+      "street_name": "Smith Rd"
+     },
+     "street": {
+      "name": "Smith Rd"
+     }
+    },
+    "language": "en",
+    "maki": "lodging",
+    "poi_category": [
+     "hotel",
+     "lodging"
+    ],
+    "poi_category_ids": [
+     "hotel",
+     "lodging"
+    ],
+    "brand": [
+     "Hampton by Hilton"
+    ],
+    "brand_id": [
+     "hampton_by_hilton"
+    ],
+    "external_ids": {
+     "dataplor": "801060ba-2486-41bd-be05-609e176f29e0"
+    },
+    "metadata": {},
+    "distance": 26760
+   },
+   {
+    "name": "Travelodge by Wyndham Romulus Detroit Airport",
+    "name_preferred": "Travelodge by Wyndham Romulus Detroit Airport",
+    "mapbox_id": "dXJuOm1ieHBvaTo0NDRlMzZjNi1iMzYzLTRmZjQtODRjNy05OGFlZjE5ODJkNjY",
+    "feature_type": "poi",
+    "address": "9095 Wickham Rd",
+    "full_address": "9095 Wickham Rd, Romulus, Michigan 48174, United States",
+    "place_formatted": "Romulus, Michigan 48174, United States",
+    "context": {
+     "country": {
+      "name": "United States",
+      "country_code": "US",
+      "country_code_alpha_3": "USA"
+     },
+     "region": {
+      "name": "Michigan",
+      "region_code": "MI",
+      "region_code_full": "US-MI"
+     },
+     "postcode": {
+      "id": "dXJuOm1ieHBsYzpDYjJPN0E",
+      "name": "48174"
+     },
+     "place": {
+      "id": "dXJuOm1ieHBsYzpFT0FvN0E",
+      "name": "Romulus"
+     },
+     "address": {
+      "name": "9095 Wickham Rd",
+      "address_number": "9095",
+      "street_name": "Wickham Rd"
+     },
+     "street": {
+      "name": "Wickham Rd"
+     }
+    },
+    "language": "en",
+    "maki": "lodging",
+    "poi_category": [
+     "hotel",
+     "lodging"
+    ],
+    "poi_category_ids": [
+     "hotel",
+     "lodging"
+    ],
+    "brand": [
+     "Wyndham",
+     "Wyndham Hotels and Resorts"
+    ],
+    "brand_id": [
+     "wyndham"
+    ],
+    "external_ids": {
+     "dataplor": "7336d2ee-91cf-46ce-a533-b9c1bafee45d"
+    },
+    "metadata": {},
+    "distance": 26688
+   }
+  ],
+  "attribution": "© 2026 Mapbox and its suppliers. All rights reserved. Use of this data is subject to the Mapbox Terms of Service. (https://www.mapbox.com/about/maps/)",
+  "response_id": "dvCsu_xXi66rMTotPSVuv-BpZZ9hSm0IUTDrnXFEl9dA61bM2_1UKEd_ZuQ59lMSuFxJAQvrTzWEvOQSvsAX3yl0XkqDT6Ytia2D"
+ }
+}

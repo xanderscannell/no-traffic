@@ -1,0 +1,74 @@
+{
+ "recorded": "2026-10-02T17:38:19.675Z",
+ "status": 200,
+ "body": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "coordinates": [
+      -83.3568429,
+      42.2081265
+     ],
+     "type": "Point"
+    },
+    "properties": {
+     "name": "Detroit Metropolitan Airport",
+     "mapbox_id": "dXJuOm1ieHBvaTphNzhkODg4YS1iNjg1LTRjMGMtODkyNy01ZTU0ZWE2YjkyNTg",
+     "feature_type": "poi",
+     "address": "Detroit",
+     "full_address": "Detroit, Michigan 48242, United States",
+     "place_formatted": "Michigan 48242, United States",
+     "context": {
+      "country": {
+       "id": "",
+       "name": "United States",
+       "country_code": "US",
+       "country_code_alpha_3": "USA"
+      },
+      "region": {
+       "id": "",
+       "name": "Michigan",
+       "region_code": "MI",
+       "region_code_full": "US-MI"
+      },
+      "postcode": {
+       "id": "dXJuOm1ieHBsYzpDY1ZPN0E",
+       "name": "48242"
+      },
+      "place": {
+       "id": "dXJuOm1ieHBsYzpCUmlJN0E",
+       "name": "Detroit"
+      }
+     },
+     "coordinates": {
+      "latitude": 42.2081265,
+      "longitude": -83.3568429,
+      "routable_points": [
+       {
+        "name": "POI",
+        "latitude": 42.2310726375114,
+        "longitude": -83.342725205273
+       }
+      ]
+     },
+     "language": "en",
+     "maki": "airport",
+     "poi_category": [
+      "airport"
+     ],
+     "poi_category_ids": [
+      "airport"
+     ],
+     "external_ids": {
+      "iata": "DTW"
+     },
+     "metadata": {},
+     "operational_status": "active"
+    }
+   }
+  ],
+  "attribution": "© 2026 Mapbox and its suppliers. All rights reserved. Use of this data is subject to the Mapbox Terms of Service. (https://www.mapbox.com/about/maps/)"
+ }
+}

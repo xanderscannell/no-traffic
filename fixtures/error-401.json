@@ -1,0 +1,7 @@
+{
+ "recorded": "2026-10-02T17:38:19.746Z",
+ "status": 401,
+ "body": {
+  "message": "Not Authorized - Invalid Token"
+ }
+}

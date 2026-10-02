@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>No Traffic</title>
+  </head>
+  <body>
+    <main class="layout">
+      <div id="map" class="map" aria-label="Map of routes"></div>
+      <section class="panel">
+        <header class="brand">
+          <h1>No Traffic</h1>
+          <p>The calmest route, not just the fastest.</p>
+        </header>
+
+        <section id="setup" class="setup" hidden>
+          <h2>One-time setup</h2>
+          <p>No Traffic reads live traffic from Mapbox, which needs a free access token.</p>
+          <ol>
+            <li>Create a free account at <a href="https://account.mapbox.com/" target="_blank" rel="noopener">mapbox.com</a> and copy your default public token (it starts with <code>pk.</code>).</li>
+            <li>In the project folder, create a file named <code>.env.local</code> containing:<br /><code>VITE_MAPBOX_TOKEN=pk.your-token</code></li>
+            <li>Stop and restart <code>npm run dev</code>.</li>
+          </ol>
+          <p>Want to look around first? <a href="?demo=det-aa-jam">Open the demo</a>.</p>
+        </section>
+
+        <p id="trip" class="trip" hidden></p>
+
+        <form id="search" class="search" autocomplete="off">
+          <div id="where" class="search">
+            <label class="field">
+              <span>From</span>
+              <input name="from" required placeholder="Address or place" />
+              <small id="from-hint" class="resolved"></small>
+            </label>
+            <button type="button" id="here" class="link">Use my location</button>
+            <label class="field">
+              <span>To</span>
+              <input name="to" required placeholder="Address or place" />
+            </label>
+          </div>
+          <label class="field tolerance">
+            <span>Max extra time <output id="tolerance-out" for="tolerance">+25%</output></span>
+            <input id="tolerance" name="tolerance" type="range" min="0" max="100" step="5" value="25" />
+          </label>
+          <button type="submit" id="go" class="primary">Find calm route</button>
+        </form>
+
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+        <ol id="results" class="results"></ol>
+        <a id="gmaps" class="primary button" target="_blank" rel="noopener" hidden>Open in Google Maps</a>
+        <button type="button" id="reset" class="secondary" hidden>New search</button>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
