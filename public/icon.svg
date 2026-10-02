@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed background so the same art works as a maskable icon; the route stays inside the 80% safe zone. -->
+  <rect width="512" height="512" fill="#0f766e"/>
+  <path d="M150 372 C150 280 250 300 256 236 C262 172 362 190 362 140" fill="none" stroke="#ffffff" stroke-width="44" stroke-linecap="round"/>
+  <circle cx="150" cy="372" r="30" fill="#2dd4bf" stroke="#ffffff" stroke-width="14"/>
+  <circle cx="362" cy="140" r="30" fill="#1c2328" stroke="#ffffff" stroke-width="14"/>
+</svg>

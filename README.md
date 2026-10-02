@@ -32,6 +32,14 @@ Without a token, the app shows these steps instead of the search form. To look a
 without a token, open http://127.0.0.1:5173/?demo=det-aa-jam (recorded
 Detroit to Ann Arbor routes with a simulated jam on I-94).
 
+## Install as an app
+
+The site is an installable web app. On Android, open it in Chrome and choose
+**Install app** from the menu (or accept the install prompt); it gets its own
+icon and opens full screen without the address bar. On iPhone, use Safari's
+**Share > Add to Home Screen**. The icons are rendered from `public/icon.svg`
+by `node scripts/icons.mjs`.
+
 ## How it works
 
 0. **Places.** Start typing in From or To and pick from the suggestions
