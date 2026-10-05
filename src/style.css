@@ -299,6 +299,12 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
 .status:empty {
   display: none;
 }

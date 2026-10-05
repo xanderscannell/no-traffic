@@ -46,6 +46,10 @@ by `node scripts/icons.mjs`.
    (Mapbox Search Box, which knows businesses and landmarks as well as
    addresses). If you press Find without picking, the top suggestion is used.
    Typed coordinates (`42.32, -83.18`) and "Use my location" also work.
+   **Set as Home** saves whatever a field points at; after that, the
+   **Home** link (or typing `home`) fills either field with it. Saved places
+   stay in this browser only (`src/places.ts`, which is also where more
+   names like "Work" would be added).
 1. **Candidates.** One request to Mapbox Directions (`driving-traffic`
    profile) returns up to 3 routes, each with a congestion level for every
    road segment: low, moderate, heavy, or severe.

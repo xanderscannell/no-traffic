@@ -41,11 +41,15 @@
               <input name="from" required placeholder="Address or place" />
               <small id="from-hint" class="resolved"></small>
             </label>
-            <button type="button" id="here" class="link">Use my location</button>
+            <div id="from-shortcuts" class="shortcuts">
+              <button type="button" id="here" class="link">Use my location</button>
+            </div>
             <label class="field">
               <span>To</span>
               <input name="to" required placeholder="Address or place" />
+              <small id="to-hint" class="resolved"></small>
             </label>
+            <div id="to-shortcuts" class="shortcuts"></div>
           </div>
           <label class="field tolerance">
             <span>Max extra time <output id="tolerance-out" for="tolerance">+25%</output></span>

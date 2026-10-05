@@ -3,6 +3,7 @@ import { combobox } from './combobox';
 import { googleMapsUrl } from './handoff';
 import { createMap } from './map';
 import { checkResponse, MapboxError, type Coord, type FetchJson } from './mapbox';
+import { loadSaved, memoryStore, SAVED_NAMES, savedNameOf, savedPlace, storeSaved, type KeyValueStore, type SavedName } from './places';
 import { plan, type Plan } from './planner';
 import { rank, stopGoSeconds, TIE_SECONDS, type Ranked } from './score';
 import { newSession, parseLatLng, parseRetrieve, parseSuggest, retrieveUrl, shortLabel, suggestUrl, type Place, type Suggestion } from './search';
@@ -23,6 +24,7 @@ const gmapsLink = $<HTMLAnchorElement>('#gmaps');
 const setupEl = $<HTMLElement>('#setup');
 const hereBtn = $<HTMLButtonElement>('#here');
 const fromHint = $<HTMLElement>('#from-hint');
+const toHint = $<HTMLElement>('#to-hint');
 
 const params = new URLSearchParams(location.search);
 const demo = params.get('demo');
@@ -193,11 +195,29 @@ interface Field {
   session: string;
   /** The row the user chose, and its coordinates (fetched as soon as it is chosen). */
   picked: { name: string; place: Promise<Place> } | null;
+  hint: HTMLElement;
+  /** Row of link buttons under the field; saved-place buttons are added to it. */
+  shortcuts: HTMLElement;
+  /** Whether the hint holds a saved-place message, which is cleared when the field changes. */
+  savedHint: boolean;
 }
 const fields: Record<'from' | 'to', Field> = {
-  from: { input: fromInput, session: newSession(), picked: null },
-  to: { input: toInput, session: newSession(), picked: null },
+  from: { input: fromInput, session: newSession(), picked: null, hint: fromHint, shortcuts: $('#from-shortcuts'), savedHint: false },
+  to: { input: toInput, session: newSession(), picked: null, hint: toHint, shortcuts: $('#to-shortcuts'), savedHint: false },
 };
+
+// Saved places (Home), remembered per browser. Demos use a throwaway store, seeded by ?home=lat,lng.
+const savedStore: KeyValueStore = (() => {
+  if (demo) return memoryStore();
+  try {
+    return localStorage;
+  } catch {
+    return memoryStore();
+  }
+})();
+let saved = loadSaved(savedStore);
+const demoHome = demo ? parseLatLng(params.get('home') ?? '') : null;
+if (demoHome) saved = { Home: { label: params.get('home')!, coord: demoHome } };
 
 /** Fixture-backed fetch for `?demo=`. Loaded on demand so the recordings stay out of the main bundle. */
 const demoFetch =
@@ -211,7 +231,8 @@ const plainFetch: FetchJson = async (url) => {
 };
 
 async function suggest(q: string, f: Field, fetchJson: FetchJson): Promise<Suggestion[]> {
-  const body = await getJson(suggestUrl(q, { proximity: here ?? 'ip', session: f.session, token: token ?? '' }), fetchJson);
+  const near = here ?? Object.values(saved)[0]?.coord ?? 'ip';
+  const body = await getJson(suggestUrl(q, { proximity: near, session: f.session, token: token ?? '' }), fetchJson);
   return parseSuggest(body);
 }
 
@@ -225,8 +246,8 @@ async function retrieve(s: Suggestion, f: Field, fetchJson: FetchJson): Promise<
 
 for (const f of Object.values(fields)) {
   combobox(f.input, {
-    // Typed coordinates are used as-is, so there is nothing to look up.
-    suggest: (q) => (parseLatLng(q) ? Promise.resolve([]) : suggest(q, f, demo ? demoFetch(demo) : plainFetch)),
+    // Typed coordinates and saved places are used as-is, so there is nothing to look up.
+    suggest: (q) => (parseLatLng(q) || savedPlace(saved, q) ? Promise.resolve([]) : suggest(q, f, demo ? demoFetch(demo) : plainFetch)),
     pick: (s) => {
       const place = retrieve(s, f, demo ? demoFetch(demo) : plainFetch);
       place.catch(() => {}); // reported when a search awaits it
@@ -236,11 +257,13 @@ for (const f of Object.values(fields)) {
   });
 }
 
-/** Turns a field into a place: my location, a typed lat,lng, the picked suggestion, or else the top suggestion. */
+/** Turns a field into a place: my location, a saved place, a typed lat,lng, the picked suggestion, or else the top suggestion. */
 async function resolve(f: Field, fetchJson: FetchJson): Promise<Place> {
   const t = f.input.value.trim();
   if (demo && DEMO_PLACES[t]) return { label: t, coord: DEMO_PLACES[t] };
   if (t === MY_LOCATION && here) return { label: MY_LOCATION, coord: here };
+  const mine = savedPlace(saved, t);
+  if (mine) return mine;
   const typed = parseLatLng(t);
   if (typed) return { label: t, coord: typed };
   if (f.picked && f.picked.name === t) return f.picked.place;
@@ -248,6 +271,78 @@ async function resolve(f: Field, fetchJson: FetchJson): Promise<Place> {
   if (!top) throw new MapboxError('notfound', `Couldn't find "${t}". Try a fuller name or address, like "Michigan Stadium, Ann Arbor".`);
   return retrieve(top, f, fetchJson);
 }
+
+function savedHint(f: Field, text: string) {
+  f.hint.textContent = text;
+  f.savedHint = true;
+}
+
+function linkButton(text: string, onClick: () => void): HTMLButtonElement {
+  const b = Object.assign(document.createElement('button'), { type: 'button', className: 'link', textContent: text });
+  b.dataset.saved = '';
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+/** Updates a field's saved-place buttons and hint to match what is saved and what the field says. */
+function refreshSaved(f: Field) {
+  const name = savedNameOf(f.input.value);
+  const p = name && saved[name];
+  if (p) savedHint(f, `${name} is ${p.label}.`);
+  else if (f.savedHint) {
+    f.hint.textContent = '';
+    f.savedHint = false;
+  }
+  f.shortcuts.querySelectorAll('[data-saved]').forEach((b) => b.remove());
+  f.shortcuts.append(
+    ...SAVED_NAMES.map((n) => {
+      if (!saved[n]) return linkButton(`Set as ${n}`, () => saveAs(f, n));
+      if (n === name) return linkButton(`Forget ${n}`, () => forget(n));
+      return linkButton(n, () => {
+        f.input.value = n;
+        f.picked = null;
+        refreshSaved(f);
+      });
+    }),
+  );
+}
+const refreshAllSaved = () => Object.values(fields).forEach(refreshSaved);
+
+/** Saves what the field points at under `name`, then shows the name in the field. */
+async function saveAs(f: Field, name: SavedName) {
+  const t = f.input.value.trim();
+  if (!t || savedNameOf(t)) {
+    savedHint(f, `Enter the address of ${name} above, then tap Set as ${name}.`);
+    return;
+  }
+  savedHint(f, 'Looking it up…');
+  let p: Place;
+  try {
+    p = await resolve(f, demo ? demoFetch(demo) : plainFetch);
+  } catch (e) {
+    if (f.input.value.trim() === t) savedHint(f, errorMessage(e));
+    return;
+  }
+  // The user edited the field while we looked it up, so what we found is no longer what they mean.
+  if (f.input.value.trim() !== t) return;
+  const label = p.label === MY_LOCATION ? `${p.coord[1].toFixed(5)}, ${p.coord[0].toFixed(5)}` : p.label;
+  saved = { ...saved, [name]: { label, coord: p.coord } };
+  const kept = storeSaved(savedStore, saved);
+  f.input.value = name;
+  f.picked = null;
+  refreshAllSaved();
+  if (!kept) savedHint(f, `${name} is ${label}, for this visit only: this browser won't let the app remember it.`);
+}
+
+function forget(name: SavedName) {
+  const rest = { ...saved };
+  delete rest[name];
+  saved = rest;
+  storeSaved(savedStore, saved);
+  refreshAllSaved();
+}
+
+for (const f of Object.values(fields)) f.input.addEventListener('input', () => refreshSaved(f));
 
 /** Real network fetch that a newer search can cancel. */
 const liveFetch =
@@ -299,6 +394,8 @@ hereBtn.addEventListener('click', () => {
     (pos) => {
       here = [pos.coords.longitude, pos.coords.latitude];
       fromInput.value = MY_LOCATION;
+      refreshSaved(fields.from);
+      fields.from.savedHint = false;
       fromHint.textContent = `Located within about ${Math.round(pos.coords.accuracy)} m.`;
     },
     (err) => {
@@ -323,4 +420,5 @@ if (demo === 'suggest') {
   toInput.value = 'Michigan Stadium, Ann Arbor';
   search();
 }
+refreshAllSaved();
 render();
