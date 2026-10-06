@@ -3,7 +3,7 @@ import { combobox } from './combobox';
 import { googleMapsUrl } from './handoff';
 import { createMap } from './map';
 import { checkResponse, MapboxError, type Coord, type FetchJson } from './mapbox';
-import { loadSaved, memoryStore, SAVED_NAMES, savedNameOf, savedPlace, storeSaved, type KeyValueStore, type SavedName } from './places';
+import { HOME, loadSaved, memoryStore, MY_LOCATION, nameProblem, savedNameOf, savedNames, savedPlace, storeSaved, without, withSaved, WORK, type KeyValueStore } from './places';
 import { plan, type Plan } from './planner';
 import { rank, stopGoSeconds, TIE_SECONDS, type Ranked } from './score';
 import { newSession, parseLatLng, parseRetrieve, parseSuggest, retrieveUrl, shortLabel, suggestUrl, type Place, type Suggestion } from './search';
@@ -25,6 +25,12 @@ const setupEl = $<HTMLElement>('#setup');
 const hereBtn = $<HTMLButtonElement>('#here');
 const fromHint = $<HTMLElement>('#from-hint');
 const toHint = $<HTMLElement>('#to-hint');
+const placesEl = $<HTMLDetailsElement>('#places');
+const placesList = $<HTMLUListElement>('#places-list');
+const placeForm = $<HTMLFormElement>('#place-form');
+const placeName = $<HTMLInputElement>('input[name=place-name]');
+const placeInput = $<HTMLInputElement>('input[name=place]');
+const placeHint = $<HTMLElement>('#place-hint');
 
 const params = new URLSearchParams(location.search);
 const demo = params.get('demo');
@@ -135,6 +141,7 @@ function render() {
   // After a search, From/To collapse into one trip line so results fit on a phone.
   const collapsed = view.kind !== 'empty';
   whereEl.hidden = collapsed;
+  placesEl.hidden = collapsed || needsSetup;
   goBtn.hidden = collapsed;
   tripEl.hidden = !collapsed;
   tripEl.replaceChildren(trip[0], Object.assign(document.createElement('span'), { className: 'arrow', textContent: ' to ' }), trip[1]);
@@ -168,7 +175,6 @@ function render() {
   }
 }
 
-const MY_LOCATION = 'My location';
 /** Last position from "Use my location", used while From says "My location". */
 let here: Coord | null = null;
 /** Demo searches use fixed places so they match the recorded routes. */
@@ -189,12 +195,15 @@ async function getJson(url: string, fetchJson: FetchJson): Promise<unknown> {
   return res.body;
 }
 
-/** Per-field autocomplete state. One Search Box session per field, renewed after each pick. */
-interface Field {
+/** Autocomplete state for an address box. One Search Box session per box, renewed after each pick. */
+interface Lookup {
   input: HTMLInputElement;
   session: string;
   /** The row the user chose, and its coordinates (fetched as soon as it is chosen). */
   picked: { name: string; place: Promise<Place> } | null;
+}
+/** From or To. */
+interface Field extends Lookup {
   hint: HTMLElement;
   /** Row of link buttons under the field; saved-place buttons are added to it. */
   shortcuts: HTMLElement;
@@ -205,8 +214,10 @@ const fields: Record<'from' | 'to', Field> = {
   from: { input: fromInput, session: newSession(), picked: null, hint: fromHint, shortcuts: $('#from-shortcuts'), savedHint: false },
   to: { input: toInput, session: newSession(), picked: null, hint: toHint, shortcuts: $('#to-shortcuts'), savedHint: false },
 };
+/** The address box of the Saved places form. */
+const placeLookup: Lookup = { input: placeInput, session: newSession(), picked: null };
 
-// Saved places (Home), remembered per browser. Demos use a throwaway store, seeded by ?home=lat,lng.
+// Saved places, remembered per browser. Demos use a throwaway store, seeded by ?home=lat,lng.
 const savedStore: KeyValueStore = (() => {
   if (demo) return memoryStore();
   try {
@@ -230,13 +241,13 @@ const plainFetch: FetchJson = async (url) => {
   return { status: r.status, body: await r.json().catch(() => ({})) };
 };
 
-async function suggest(q: string, f: Field, fetchJson: FetchJson): Promise<Suggestion[]> {
-  const near = here ?? Object.values(saved)[0]?.coord ?? 'ip';
+async function suggest(q: string, f: Lookup, fetchJson: FetchJson): Promise<Suggestion[]> {
+  const near = here ?? (saved[HOME] ?? saved[WORK] ?? Object.values(saved)[0])?.coord ?? 'ip';
   const body = await getJson(suggestUrl(q, { proximity: near, session: f.session, token: token ?? '' }), fetchJson);
   return parseSuggest(body);
 }
 
-async function retrieve(s: Suggestion, f: Field, fetchJson: FetchJson): Promise<Place> {
+async function retrieve(s: Suggestion, f: Lookup, fetchJson: FetchJson): Promise<Place> {
   const body = await getJson(retrieveUrl(s.id, { session: f.session, token: token ?? '' }), fetchJson);
   f.session = newSession(); // a retrieve ends the billing session
   const place = parseRetrieve(body);
@@ -244,7 +255,7 @@ async function retrieve(s: Suggestion, f: Field, fetchJson: FetchJson): Promise<
   return { label: shortLabel(s), coord: place.coord };
 }
 
-for (const f of Object.values(fields)) {
+for (const f of [...Object.values(fields), placeLookup]) {
   combobox(f.input, {
     // Typed coordinates and saved places are used as-is, so there is nothing to look up.
     suggest: (q) => (parseLatLng(q) || savedPlace(saved, q) ? Promise.resolve([]) : suggest(q, f, demo ? demoFetch(demo) : plainFetch)),
@@ -258,7 +269,7 @@ for (const f of Object.values(fields)) {
 }
 
 /** Turns a field into a place: my location, a saved place, a typed lat,lng, the picked suggestion, or else the top suggestion. */
-async function resolve(f: Field, fetchJson: FetchJson): Promise<Place> {
+async function resolve(f: Lookup, fetchJson: FetchJson): Promise<Place> {
   const t = f.input.value.trim();
   if (demo && DEMO_PLACES[t]) return { label: t, coord: DEMO_PLACES[t] };
   if (t === MY_LOCATION && here) return { label: MY_LOCATION, coord: here };
@@ -279,68 +290,101 @@ function savedHint(f: Field, text: string) {
 
 function linkButton(text: string, onClick: () => void): HTMLButtonElement {
   const b = Object.assign(document.createElement('button'), { type: 'button', className: 'link', textContent: text });
-  b.dataset.saved = '';
   b.addEventListener('click', onClick);
   return b;
 }
 
-/** Updates a field's saved-place buttons and hint to match what is saved and what the field says. */
+/** Updates a field's saved-place links and hint to match what is saved and what the field says. */
 function refreshSaved(f: Field) {
-  const name = savedNameOf(f.input.value);
-  const p = name && saved[name];
-  if (p) savedHint(f, `${name} is ${p.label}.`);
+  const name = savedNameOf(saved, f.input.value);
+  if (name) savedHint(f, `${name} is ${saved[name].label}.`);
   else if (f.savedHint) {
     f.hint.textContent = '';
     f.savedHint = false;
   }
   f.shortcuts.querySelectorAll('[data-saved]').forEach((b) => b.remove());
+  // ponytail: one link per saved place gets crowded past about 6; list them in the dropdown if people save more.
   f.shortcuts.append(
-    ...SAVED_NAMES.map((n) => {
-      if (!saved[n]) return linkButton(`Set as ${n}`, () => saveAs(f, n));
-      if (n === name) return linkButton(`Forget ${n}`, () => forget(n));
-      return linkButton(n, () => {
+    ...savedNames(saved).map((n) => {
+      const b = linkButton(n, () => {
         f.input.value = n;
         f.picked = null;
         refreshSaved(f);
       });
+      b.dataset.saved = '';
+      return b;
     }),
   );
 }
-const refreshAllSaved = () => Object.values(fields).forEach(refreshSaved);
 
-/** Saves what the field points at under `name`, then shows the name in the field. */
-async function saveAs(f: Field, name: SavedName) {
-  const t = f.input.value.trim();
-  if (!t || savedNameOf(t)) {
-    savedHint(f, `Enter the address of ${name} above, then tap Set as ${name}.`);
-    return;
-  }
-  savedHint(f, 'Looking it up…');
-  let p: Place;
-  try {
-    p = await resolve(f, demo ? demoFetch(demo) : plainFetch);
-  } catch (e) {
-    if (f.input.value.trim() === t) savedHint(f, errorMessage(e));
-    return;
-  }
-  // The user edited the field while we looked it up, so what we found is no longer what they mean.
-  if (f.input.value.trim() !== t) return;
-  const label = p.label === MY_LOCATION ? `${p.coord[1].toFixed(5)}, ${p.coord[0].toFixed(5)}` : p.label;
-  saved = { ...saved, [name]: { label, coord: p.coord } };
+/** Draws the Saved places list: Home and Work always, set or not, then the rest. */
+function renderPlaces() {
+  placesList.replaceChildren(
+    ...[...new Set([HOME, WORK, ...savedNames(saved)])].map((name) => {
+      const p = saved[name] as Place | undefined;
+      const li = document.createElement('li');
+      const text = Object.assign(document.createElement('span'), { className: 'place' });
+      text.append(Object.assign(document.createElement('strong'), { textContent: name }), Object.assign(document.createElement('small'), { textContent: p?.label ?? 'Not set' }));
+      li.append(text);
+      if (name === HOME || name === WORK)
+        li.append(
+          linkButton(p ? 'Change' : 'Set', () => {
+            placeName.value = name;
+            placeInput.focus();
+          }),
+        );
+      if (p)
+        li.append(
+          linkButton('Remove', () => {
+            saved = without(saved, name);
+            savedChanged();
+            placeHint.textContent = `Removed ${name}.`;
+          }),
+        );
+      return li;
+    }),
+  );
+}
+
+/** Stores `saved` and redraws everything that shows it. Returns false if the browser won't keep it. */
+function savedChanged(): boolean {
   const kept = storeSaved(savedStore, saved);
-  f.input.value = name;
-  f.picked = null;
-  refreshAllSaved();
-  if (!kept) savedHint(f, `${name} is ${label}, for this visit only: this browser won't let the app remember it.`);
+  Object.values(fields).forEach(refreshSaved);
+  renderPlaces();
+  return kept;
 }
 
-function forget(name: SavedName) {
-  const rest = { ...saved };
-  delete rest[name];
-  saved = rest;
-  storeSaved(savedStore, saved);
-  refreshAllSaved();
-}
+placeForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const problem = nameProblem(placeName.value);
+  const t = placeInput.value.trim();
+  if (problem || !t) {
+    placeHint.textContent = problem ?? 'Enter an address.';
+    return;
+  }
+  // Another saved place, my location, or an address to look up.
+  const other = savedNameOf(saved, t);
+  let p: Place;
+  if (other) p = saved[other];
+  else {
+    placeHint.textContent = 'Looking it up…';
+    try {
+      p = await resolve(placeLookup, demo ? demoFetch(demo) : plainFetch);
+    } catch (err) {
+      if (placeInput.value.trim() === t) placeHint.textContent = errorMessage(err);
+      return;
+    }
+    // The user edited the address while we looked it up, so what we found is no longer what they mean.
+    if (placeInput.value.trim() !== t) return;
+    if (p.label === MY_LOCATION) p = { label: `${p.coord[1].toFixed(5)}, ${p.coord[0].toFixed(5)}`, coord: p.coord };
+  }
+  saved = withSaved(saved, placeName.value, p);
+  const name = savedNameOf(saved, placeName.value)!;
+  const kept = savedChanged();
+  placeForm.reset();
+  placeLookup.picked = null;
+  placeHint.textContent = kept ? `Saved ${name}. Type it, or tap it under From or To.` : `Saved ${name} for this visit only: this browser won't let the app remember it.`;
+});
 
 for (const f of Object.values(fields)) f.input.addEventListener('input', () => refreshSaved(f));
 
@@ -420,5 +464,6 @@ if (demo === 'suggest') {
   toInput.value = 'Michigan Stadium, Ann Arbor';
   search();
 }
-refreshAllSaved();
+Object.values(fields).forEach(refreshSaved);
+renderPlaces();
 render();

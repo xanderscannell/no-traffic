@@ -58,6 +58,23 @@
           <button type="submit" id="go" class="primary">Find calm route</button>
         </form>
 
+        <details id="places" class="places">
+          <summary>Saved places</summary>
+          <ul id="places-list" class="places-list"></ul>
+          <form id="place-form" class="search" autocomplete="off">
+            <label class="field">
+              <span>Name</span>
+              <input name="place-name" required maxlength="40" placeholder="Home, Work, Gym…" />
+            </label>
+            <label class="field">
+              <span>Address</span>
+              <input name="place" required placeholder="Address or place" />
+              <small id="place-hint" class="resolved" aria-live="polite"></small>
+            </label>
+            <button type="submit" class="secondary">Save place</button>
+          </form>
+        </details>
+
         <div id="status" class="status" role="status" aria-live="polite"></div>
         <ol id="results" class="results"></ol>
         <a id="gmaps" class="primary button" target="_blank" rel="noopener" hidden>Open in Google Maps</a>

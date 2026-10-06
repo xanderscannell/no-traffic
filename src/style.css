@@ -304,6 +304,44 @@ button:disabled {
   flex-wrap: wrap;
   gap: 4px 18px;
 }
+.shortcuts:empty {
+  display: none;
+}
+
+.places summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--muted);
+}
+.places[open] summary {
+  margin-bottom: 12px;
+}
+.places-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.places-list li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.places-list .place {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.places-list small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.places-list .link {
+  align-self: center;
+}
 
 .status:empty {
   display: none;
