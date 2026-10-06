@@ -4,10 +4,11 @@ import type { Suggestion } from './search';
  * Autocomplete dropdown for a text input (ARIA combobox pattern).
  * `suggest` is called 250 ms after typing pauses; `pick` when a row is chosen;
  * `edited` on every keystroke, so a previous pick can be forgotten.
+ * `saved` rows are listed first: right away on focus and for text under 3 characters, else with the suggestions.
  */
 export function combobox(
   input: HTMLInputElement,
-  opts: { suggest: (q: string) => Promise<Suggestion[]>; pick: (s: Suggestion) => void; edited: () => void },
+  opts: { suggest: (q: string) => Promise<Suggestion[]>; pick: (s: Suggestion) => void; edited: () => void; saved?: (q: string) => Suggestion[] },
 ) {
   const list = document.createElement('ul');
   list.id = `${input.name}-list`;
@@ -47,6 +48,7 @@ export function combobox(
         li.setAttribute('aria-selected', String(i === active));
         const name = document.createElement('strong');
         name.textContent = s.name;
+        if (s.saved) name.append(' ', Object.assign(document.createElement('span'), { className: 'badge', textContent: 'Saved' }));
         const detail = document.createElement('span');
         detail.textContent = s.detail;
         li.append(name, detail);
@@ -71,15 +73,24 @@ export function combobox(
     opts.pick(s);
   };
 
+  const local = (q: string) => opts.saved?.(q) ?? [];
+  const showLocal = () => {
+    items = local(input.value.trim());
+    active = -1;
+    show();
+  };
+  input.addEventListener('focus', showLocal);
+
   input.addEventListener('input', () => {
     opts.edited();
     clearTimeout(timer);
     const q = input.value.trim();
     if (q.length < 3) {
       seq++;
-      close();
+      showLocal();
       return;
     }
+    // Longer text keeps the current rows until the new ones arrive, so the list doesn't flicker.
     timer = window.setTimeout(async () => {
       const mine = ++seq;
       let found: Suggestion[] = [];
@@ -89,7 +100,7 @@ export function combobox(
         /* no list; a search still reports the real error */
       }
       if (mine !== seq || document.activeElement !== input) return;
-      items = found;
+      items = [...local(q), ...found];
       active = -1;
       show();
     }, 250);

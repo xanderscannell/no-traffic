@@ -6,6 +6,8 @@ export interface Suggestion {
   name: string;
   /** Where it is, e.g. "Detroit, Michigan 48242". */
   detail: string;
+  /** One of the user's saved places, which needs no lookup. */
+  saved?: boolean;
 }
 
 export interface Place {

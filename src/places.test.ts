@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { loadSaved, memoryStore, nameProblem, SAVED_KEY, savedNameOf, savedNames, savedPlace, storeSaved, without, withSaved } from './places';
+import { loadSaved, memoryStore, nameProblem, SAVED_KEY, savedMatches, savedNameOf, savedNames, savedPlace, storeSaved, without, withSaved } from './places';
 
 const home = { label: '123 Main St, Ann Arbor', coord: [-83.74, 42.28] as [number, number] };
 const gym = { label: 'Planet Fitness, Ypsilanti', coord: [-83.61, 42.24] as [number, number] };
@@ -57,6 +57,15 @@ test('Home and Work come first, then the rest alphabetically', () => {
   expect(savedNames({})).toEqual([]);
 });
 
+test('the dropdown offers every saved place, then those matching by name or address', () => {
+  const places = { Gym: gym, Home: home, Work: { label: 'Ford Field, Detroit', coord: [-83.05, 42.34] as [number, number] } };
+  expect(savedMatches(places, '')).toEqual(['Home', 'Work', 'Gym']);
+  expect(savedMatches(places, ' GY')).toEqual(['Gym']);
+  expect(savedMatches(places, 'main st')).toEqual(['Home']);
+  expect(savedMatches(places, 'o')).toEqual(['Home', 'Work']);
+  expect(savedMatches(places, 'zzz')).toEqual([]);
+});
+
 test('names that would clash with other inputs are refused', () => {
   expect(nameProblem("Mom's")).toBeNull();
   expect(nameProblem('  ')).toMatch(/name/);
@@ -85,4 +94,11 @@ test('saving replaces a same-named place in any case, and removing ignores case'
   expect(places).toEqual({ Home: home, Gym: home });
   expect(without(places, 'GYM')).toEqual({ Home: home });
   expect(without(places, 'Work')).toEqual(places);
+});
+
+test('renaming moves the place to the new name and keeps its coordinates', () => {
+  const places = { Home: home, Gym: gym };
+  expect(withSaved(without(places, 'Gym'), 'Climbing', places.Gym)).toEqual({ Home: home, Climbing: gym });
+  // Fixing only the case of a name keeps one entry.
+  expect(withSaved(without(places, 'Gym'), 'GYM', places.Gym)).toEqual({ Home: home, GYM: gym });
 });

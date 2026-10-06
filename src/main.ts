@@ -3,7 +3,7 @@ import { combobox } from './combobox';
 import { googleMapsUrl } from './handoff';
 import { createMap } from './map';
 import { checkResponse, MapboxError, type Coord, type FetchJson } from './mapbox';
-import { HOME, loadSaved, memoryStore, MY_LOCATION, nameProblem, savedNameOf, savedNames, savedPlace, storeSaved, without, withSaved, WORK, type KeyValueStore } from './places';
+import { HOME, loadSaved, memoryStore, MY_LOCATION, nameProblem, savedMatches, savedNameOf, savedNames, savedPlace, storeSaved, without, withSaved, WORK, type KeyValueStore } from './places';
 import { plan, type Plan } from './planner';
 import { rank, stopGoSeconds, TIE_SECONDS, type Ranked } from './score';
 import { newSession, parseLatLng, parseRetrieve, parseSuggest, retrieveUrl, shortLabel, suggestUrl, type Place, type Suggestion } from './search';
@@ -31,6 +31,8 @@ const placeForm = $<HTMLFormElement>('#place-form');
 const placeName = $<HTMLInputElement>('input[name=place-name]');
 const placeInput = $<HTMLInputElement>('input[name=place]');
 const placeHint = $<HTMLElement>('#place-hint');
+const placeSave = $<HTMLButtonElement>('#place-save');
+const placeCancel = $<HTMLButtonElement>('#place-cancel');
 
 const params = new URLSearchParams(location.search);
 const demo = params.get('demo');
@@ -255,11 +257,18 @@ async function retrieve(s: Suggestion, f: Lookup, fetchJson: FetchJson): Promise
   return { label: shortLabel(s), coord: place.coord };
 }
 
-for (const f of [...Object.values(fields), placeLookup]) {
+/** Wires autocomplete to an address box. With `pickedSaved`, saved places are offered too, and it runs when one is picked. */
+function autocomplete(f: Lookup, pickedSaved?: () => void) {
   combobox(f.input, {
     // Typed coordinates and saved places are used as-is, so there is nothing to look up.
     suggest: (q) => (parseLatLng(q) || savedPlace(saved, q) ? Promise.resolve([]) : suggest(q, f, demo ? demoFetch(demo) : plainFetch)),
+    saved: pickedSaved && ((q) => savedMatches(saved, q).map((n) => ({ id: `saved:${n}`, name: n, detail: saved[n].label, saved: true }))),
     pick: (s) => {
+      if (s.saved) {
+        f.picked = null; // the name in the field is enough
+        pickedSaved?.();
+        return;
+      }
       const place = retrieve(s, f, demo ? demoFetch(demo) : plainFetch);
       place.catch(() => {}); // reported when a search awaits it
       f.picked = { name: s.name, place };
@@ -267,6 +276,8 @@ for (const f of [...Object.values(fields), placeLookup]) {
     edited: () => (f.picked = null),
   });
 }
+for (const f of Object.values(fields)) autocomplete(f, () => refreshSaved(f));
+autocomplete(placeLookup);
 
 /** Turns a field into a place: my location, a saved place, a typed lat,lng, the picked suggestion, or else the top suggestion. */
 async function resolve(f: Lookup, fetchJson: FetchJson): Promise<Place> {
@@ -303,7 +314,7 @@ function refreshSaved(f: Field) {
     f.savedHint = false;
   }
   f.shortcuts.querySelectorAll('[data-saved]').forEach((b) => b.remove());
-  // ponytail: one link per saved place gets crowded past about 6; list them in the dropdown if people save more.
+  // ponytail: one link per saved place gets crowded past about 6; the dropdown lists them all, so trim these to Home and Work if they crowd.
   f.shortcuts.append(
     ...savedNames(saved).map((n) => {
       const b = linkButton(n, () => {
@@ -326,16 +337,24 @@ function renderPlaces() {
       const text = Object.assign(document.createElement('span'), { className: 'place' });
       text.append(Object.assign(document.createElement('strong'), { textContent: name }), Object.assign(document.createElement('small'), { textContent: p?.label ?? 'Not set' }));
       li.append(text);
-      if (name === HOME || name === WORK)
+      if (!p)
         li.append(
-          linkButton(p ? 'Change' : 'Set', () => {
+          linkButton('Set', () => {
+            editPlace(null);
             placeName.value = name;
             placeInput.focus();
           }),
         );
-      if (p)
+      else
         li.append(
+          linkButton('Edit', () => {
+            editPlace(name);
+            placeName.value = name;
+            placeInput.value = p.label;
+            placeName.focus();
+          }),
           linkButton('Remove', () => {
+            if (editing === name) editPlace(null);
             saved = without(saved, name);
             savedChanged();
             placeHint.textContent = `Removed ${name}.`;
@@ -345,6 +364,19 @@ function renderPlaces() {
     }),
   );
 }
+
+/** The saved place the form is changing, or null when it adds a new one. */
+let editing: string | null = null;
+/** Empties the form, ready to add a place, or to change `name`. */
+function editPlace(name: string | null) {
+  editing = name;
+  placeForm.reset();
+  placeLookup.picked = null;
+  placeHint.textContent = name ? `Editing ${name}. Change its name or address.` : '';
+  placeSave.textContent = name ? 'Save changes' : 'Save place';
+  placeCancel.hidden = !name;
+}
+placeCancel.addEventListener('click', () => editPlace(null));
 
 /** Stores `saved` and redraws everything that shows it. Returns false if the browser won't keep it. */
 function savedChanged(): boolean {
@@ -356,33 +388,37 @@ function savedChanged(): boolean {
 
 placeForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const problem = nameProblem(placeName.value);
+  const was = editing;
+  const typedName = placeName.value;
   const t = placeInput.value.trim();
+  const taken = savedNameOf(saved, typedName);
+  const problem = nameProblem(typedName) ?? (taken && taken !== was ? `You already have ${taken}. Tap Edit next to it to change it.` : null);
   if (problem || !t) {
     placeHint.textContent = problem ?? 'Enter an address.';
     return;
   }
-  // Another saved place, my location, or an address to look up.
+  // The address it already had, another saved place, my location, or an address to look up.
+  const before = was ? saved[was] : null;
   const other = savedNameOf(saved, t);
   let p: Place;
-  if (other) p = saved[other];
+  if (before && t === before.label) p = before;
+  else if (other) p = saved[other];
   else {
     placeHint.textContent = 'Looking it up…';
     try {
       p = await resolve(placeLookup, demo ? demoFetch(demo) : plainFetch);
     } catch (err) {
-      if (placeInput.value.trim() === t) placeHint.textContent = errorMessage(err);
+      if (placeInput.value.trim() === t && editing === was) placeHint.textContent = errorMessage(err);
       return;
     }
-    // The user edited the address while we looked it up, so what we found is no longer what they mean.
-    if (placeInput.value.trim() !== t) return;
+    // The user changed the form while we looked it up, so what we found is no longer what they mean.
+    if (placeInput.value.trim() !== t || editing !== was) return;
     if (p.label === MY_LOCATION) p = { label: `${p.coord[1].toFixed(5)}, ${p.coord[0].toFixed(5)}`, coord: p.coord };
   }
-  saved = withSaved(saved, placeName.value, p);
-  const name = savedNameOf(saved, placeName.value)!;
+  saved = withSaved(was ? without(saved, was) : saved, typedName, p);
+  const name = savedNameOf(saved, typedName)!;
   const kept = savedChanged();
-  placeForm.reset();
-  placeLookup.picked = null;
+  editPlace(null);
   placeHint.textContent = kept ? `Saved ${name}. Type it, or tap it under From or To.` : `Saved ${name} for this visit only: this browser won't let the app remember it.`;
 });
 

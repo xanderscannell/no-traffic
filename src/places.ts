@@ -47,6 +47,12 @@ export function savedNames(places: SavedPlaces): string[] {
   return Object.keys(places).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
+/** Saved names to offer for a field's text: all of them when it's empty, else those whose name or address contains it. */
+export function savedMatches(places: SavedPlaces, text: string): string[] {
+  const t = text.trim().toLowerCase();
+  return savedNames(places).filter((n) => n.toLowerCase().includes(t) || places[n].label.toLowerCase().includes(t));
+}
+
 /** Why `name` can't be used for a saved place, or null if it can. */
 export function nameProblem(name: string): string | null {
   const n = name.trim();
