@@ -16,9 +16,21 @@ const isCoord = (c: unknown): c is Coord =>
 
 /** Reads saved places, dropping anything malformed. Never throws. */
 export function loadSaved(store: KeyValueStore): SavedPlaces {
+  try {
+    return parseSaved(store.getItem(SAVED_KEY) ?? '{}');
+  } catch {
+    return {};
+  }
+}
+
+/** Saved places as a backup file's text. It is the stored format, so a backup restores through the same checks. */
+export const backupText = (places: SavedPlaces) => JSON.stringify(places, null, 2);
+
+/** Saved places from stored or backup text, dropping anything malformed. Never throws. */
+export function parseSaved(text: string): SavedPlaces {
   let raw: unknown;
   try {
-    raw = JSON.parse(store.getItem(SAVED_KEY) ?? '{}');
+    raw = JSON.parse(text);
   } catch {
     return {};
   }
@@ -86,6 +98,11 @@ export function withSaved(places: SavedPlaces, name: string, place: Place): Save
   const n = name.trim();
   const key = [HOME, WORK].find((k) => k.toLowerCase() === n.toLowerCase()) ?? n;
   return { ...without(places, key), [key]: place };
+}
+
+/** `places` plus everything in `restored`, which replaces same-named places. */
+export function withRestored(places: SavedPlaces, restored: SavedPlaces): SavedPlaces {
+  return Object.entries(restored).reduce((out, [name, p]) => withSaved(out, name, p), places);
 }
 
 /** In-memory store, for demos and when the browser blocks storage. */

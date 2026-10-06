@@ -3,7 +3,7 @@ import { combobox } from './combobox';
 import { googleMapsUrl } from './handoff';
 import { createMap } from './map';
 import { checkResponse, MapboxError, type Coord, type FetchJson } from './mapbox';
-import { HOME, loadSaved, memoryStore, MY_LOCATION, nameProblem, savedMatches, savedNameOf, savedNames, savedPlace, storeSaved, without, withSaved, WORK, type KeyValueStore } from './places';
+import { backupText, HOME, loadSaved, memoryStore, MY_LOCATION, nameProblem, parseSaved, savedMatches, savedNameOf, savedNames, savedPlace, storeSaved, without, withRestored, withSaved, WORK, type KeyValueStore } from './places';
 import { plan, type Plan } from './planner';
 import { rank, stopGoSeconds, TIE_SECONDS, type Ranked } from './score';
 import { newSession, parseLatLng, parseRetrieve, parseSuggest, retrieveUrl, shortLabel, suggestUrl, type Place, type Suggestion } from './search';
@@ -33,6 +33,9 @@ const placeInput = $<HTMLInputElement>('input[name=place]');
 const placeHint = $<HTMLElement>('#place-hint');
 const placeSave = $<HTMLButtonElement>('#place-save');
 const placeCancel = $<HTMLButtonElement>('#place-cancel');
+const backupBtn = $<HTMLButtonElement>('#backup');
+const restoreBtn = $<HTMLButtonElement>('#restore');
+const restoreFile = $<HTMLInputElement>('#restore-file');
 
 const params = new URLSearchParams(location.search);
 const demo = params.get('demo');
@@ -378,13 +381,54 @@ function editPlace(name: string | null) {
 }
 placeCancel.addEventListener('click', () => editPlace(null));
 
+let persistAsked = false;
 /** Stores `saved` and redraws everything that shows it. Returns false if the browser won't keep it. */
 function savedChanged(): boolean {
   const kept = storeSaved(savedStore, saved);
+  // Asks the browser not to delete our storage when the phone runs low on space. It can't stop someone clearing it.
+  if (kept && !demo && !persistAsked && savedNames(saved).length) {
+    persistAsked = true;
+    navigator.storage?.persist?.().catch(() => {});
+  }
   Object.values(fields).forEach(refreshSaved);
   renderPlaces();
   return kept;
 }
+
+backupBtn.addEventListener('click', () => {
+  const n = savedNames(saved).length;
+  if (!n) {
+    placeHint.textContent = 'Nothing to back up yet. Save a place first.';
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([backupText(saved)], { type: 'application/json' }));
+  a.download = `no-traffic-places-${new Date().toLocaleDateString('en-CA')}.json`; // en-CA writes YYYY-MM-DD, in local time
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  placeHint.textContent = `Backed up ${n} place${n === 1 ? '' : 's'}. Keep the file somewhere safe, like Downloads or Drive.`;
+});
+
+restoreBtn.addEventListener('click', () => restoreFile.click());
+restoreFile.addEventListener('change', async () => {
+  const file = restoreFile.files?.[0];
+  restoreFile.value = ''; // so picking the same file again still fires
+  if (!file) return;
+  // Backups are a few hundred bytes; anything big is not one.
+  const restored = file.size > 100_000 ? {} : parseSaved(await file.text());
+  const names = savedNames(restored);
+  if (!names.length) {
+    placeHint.textContent = `No saved places found in ${file.name}. Pick a file made with Back up.`;
+    return;
+  }
+  const replaced = names.filter((n) => savedNameOf(saved, n));
+  const question = `Restore ${names.length} place${names.length === 1 ? '' : 's'}: ${names.join(', ')}?${replaced.length ? `\n\nThis replaces your current ${replaced.join(', ')}.` : ''}`;
+  if (!confirm(question)) return;
+  editPlace(null);
+  saved = withRestored(saved, restored);
+  const kept = savedChanged();
+  placeHint.textContent = kept ? `Restored ${names.join(', ')}.` : `Restored ${names.join(', ')} for this visit only: this browser won't let the app remember them.`;
+});
 
 placeForm.addEventListener('submit', async (e) => {
   e.preventDefault();

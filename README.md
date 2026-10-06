@@ -50,7 +50,10 @@ by `node scripts/icons.mjs`.
    places you name, each of which you can edit (rename or move) or remove.
    Saved places are listed first in the From and To suggestions, get a link
    under each field, and can be typed by name (`home`, `gym`). They stay in
-   this browser only (`src/places.ts`).
+   this browser only (`src/places.ts`), so clearing the browser's site data
+   erases them: **Back up to a file** saves them to a small JSON file, and
+   **Restore from a file** adds them back. The app also asks the browser
+   not to evict its storage when the device runs low on space.
 1. **Candidates.** One request to Mapbox Directions (`driving-traffic`
    profile) returns up to 3 routes, each with a congestion level for every
    road segment: low, moderate, heavy, or severe.

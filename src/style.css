@@ -342,6 +342,12 @@ button:disabled {
 .places-list .link {
   align-self: center;
 }
+.backup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 16px 0 0;
+}
 
 .status:empty {
   display: none;

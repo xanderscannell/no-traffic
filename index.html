@@ -74,6 +74,11 @@
             <button type="submit" id="place-save" class="secondary">Save place</button>
             <button type="button" id="place-cancel" class="link" hidden>Cancel</button>
           </form>
+          <p class="backup">
+            <button type="button" id="backup" class="link">Back up to a file</button>
+            <button type="button" id="restore" class="link">Restore from a file</button>
+            <input id="restore-file" type="file" accept=".json,application/json" hidden />
+          </p>
         </details>
 
         <div id="status" class="status" role="status" aria-live="polite"></div>

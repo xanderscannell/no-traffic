@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { loadSaved, memoryStore, nameProblem, SAVED_KEY, savedMatches, savedNameOf, savedNames, savedPlace, storeSaved, without, withSaved } from './places';
+import { backupText, loadSaved, memoryStore, nameProblem, parseSaved, SAVED_KEY, savedMatches, savedNameOf, savedNames, savedPlace, storeSaved, without, withRestored, withSaved } from './places';
 
 const home = { label: '123 Main St, Ann Arbor', coord: [-83.74, 42.28] as [number, number] };
 const gym = { label: 'Planet Fitness, Ypsilanti', coord: [-83.61, 42.24] as [number, number] };
@@ -94,6 +94,17 @@ test('saving replaces a same-named place in any case, and removing ignores case'
   expect(places).toEqual({ Home: home, Gym: home });
   expect(without(places, 'GYM')).toEqual({ Home: home });
   expect(without(places, 'Work')).toEqual(places);
+});
+
+test('a backup restores the same places, merged over what is already saved', () => {
+  const work = { label: 'Ford Field, Detroit', coord: [-83.05, 42.34] as [number, number] };
+  const backup = backupText({ Home: home, Gym: gym });
+  expect(parseSaved(backup)).toEqual({ Home: home, Gym: gym });
+  // Same names are replaced (in any case), others are kept.
+  expect(withRestored({ home: work, Work: work }, parseSaved(backup))).toEqual({ Home: home, Work: work, Gym: gym });
+  // A file that isn't a backup restores nothing.
+  expect(parseSaved('<html>')).toEqual({});
+  expect(parseSaved('{"Home":"123 Main St"}')).toEqual({});
 });
 
 test('renaming moves the place to the new name and keeps its coordinates', () => {
